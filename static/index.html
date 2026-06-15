@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Breakout Scanner — S&amp;P 500 / NASDAQ</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/static/manifest.webmanifest" />
+  <meta name="theme-color" content="#07090f" />
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png" />
+
+  <!-- iOS standalone (Add to Home Screen) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Breakout" />
+  <link rel="apple-touch-icon" href="/static/icons/icon-180.png" />
+
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">▲</div>
+      <div>
+        <div class="title">Breakout Scanner</div>
+        <div class="subtitle">S&amp;P 500 &amp; NASDAQ-100 · momentum confluence engine</div>
+      </div>
+    </div>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="scanner" type="button">Scanner</button>
+      <button class="tab" data-view="plans" type="button">My Plans <span class="tab-count" id="plans-count">0</span></button>
+    </nav>
+  </header>
+
+  <!-- ============ SCANNER VIEW ============ -->
+  <div class="view active" id="view-scanner">
+    <div class="view-controls">
+      <div class="stat">
+        <div class="stat-label">Scanned</div>
+        <div class="stat-value" id="stat-scanned">0 / 0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Setups found</div>
+        <div class="stat-value accent" id="stat-found">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Elapsed</div>
+        <div class="stat-value" id="stat-elapsed">0.0s</div>
+      </div>
+      <button id="refresh-prices-btn" class="ghost" type="button" disabled title="Update live prices on found setups without re-running the scan">↻ Refresh prices</button>
+      <button id="scan-btn" class="primary">Start scan</button>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-meta" id="progress-meta">Idle — press Start scan to begin.</div>
+    </div>
+
+    <section class="filters" id="filters">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="filter-label" for="f-search">Search</label>
+          <input id="f-search" class="filter-input" type="search" placeholder="Ticker (e.g. NVDA)" autocomplete="off" />
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Index</label>
+          <div class="seg" id="f-index" role="tablist">
+            <button class="seg-btn active" data-val="all" type="button">All</button>
+            <button class="seg-btn" data-val="sp500" type="button">S&amp;P 500</button>
+            <button class="seg-btn" data-val="nasdaq100" type="button">NASDAQ-100</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Universe (scan size)</label>
+          <div class="seg" id="f-universe" role="tablist">
+            <button class="seg-btn active" data-val="top" type="button" title="Curated ~250 large caps · ~30s scan">Top 250</button>
+            <button class="seg-btn" data-val="full" type="button" title="Full S&amp;P 500 + NASDAQ-100 (~550 names) · ~70s scan, fetched live from Wikipedia">Full ~550</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label" for="f-sort">Sort by</label>
+          <select id="f-sort" class="filter-input">
+            <option value="score">Score (high → low)</option>
+            <option value="upside">Upside %</option>
+            <option value="rr">Reward / Risk</option>
+            <option value="change">Today's change</option>
+            <option value="ticker">Ticker (A → Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filters-row sliders">
+        <div class="filter-group slider">
+          <div class="slider-head">
+            <label class="filter-label" for="f-score">Min score</label>
+            <span class="slider-val" id="f-score-val">60</span>
+          </div>
+          <input id="f-score" type="range" min="60" max="100" step="1" value="60" />
+        </div>
+
+        <div class="filter-group slider">
+          <div class="slider-head">
+            <label class="filter-label" for="f-upside">Min upside %</label>
+            <span class="slider-val" id="f-upside-val">0%</span>
+          </div>
+          <input id="f-upside" type="range" min="0" max="30" step="0.5" value="0" />
+        </div>
+
+        <div class="filter-group slider">
+          <div class="slider-head">
+            <label class="filter-label" for="f-rr">Min R / R</label>
+            <span class="slider-val" id="f-rr-val">0×</span>
+          </div>
+          <input id="f-rr" type="range" min="0" max="5" step="0.1" value="0" />
+        </div>
+
+        <div class="filter-group price-range">
+          <label class="filter-label">Price range ($)</label>
+          <div class="price-inputs">
+            <input id="f-pmin" class="filter-input price-num" type="number" min="0" step="1" placeholder="min" />
+            <span class="price-sep">–</span>
+            <input id="f-pmax" class="filter-input price-num" type="number" min="0" step="1" placeholder="max" />
+          </div>
+        </div>
+
+        <button id="f-reset" class="ghost" type="button">Reset</button>
+      </div>
+
+      <div class="filters-meta" id="filters-meta">Showing 0 of 0 setups</div>
+    </section>
+
+    <main>
+      <div id="empty-state" class="empty-state">
+        <svg class="hero-illustration" viewBox="0 0 320 170" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="heroLine" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#22d3ee" />
+              <stop offset="50%" stop-color="#6ee7b7" />
+              <stop offset="100%" stop-color="#a78bfa" />
+            </linearGradient>
+            <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(110,231,183,0.28)" />
+              <stop offset="100%" stop-color="rgba(110,231,183,0)" />
+            </linearGradient>
+            <filter id="heroGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3.5" result="b" />
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- resistance "roof" the price breaks through -->
+          <line class="hero-roof" x1="20" y1="58" x2="300" y2="58" stroke="#f472b6" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.7" />
+          <text x="24" y="50" fill="#f472b6" font-size="9" font-family="ui-sans-serif" opacity="0.85">resistance</text>
+          <!-- area under curve -->
+          <path class="hero-area" d="M20 130 L70 120 L110 124 L150 96 L190 104 L230 70 L270 40 L300 22 L300 150 L20 150 Z" fill="url(#heroFill)" />
+          <!-- the breakout line -->
+          <path class="hero-path" d="M20 130 L70 120 L110 124 L150 96 L190 104 L230 70 L270 40 L300 22" stroke="url(#heroLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#heroGlow)" />
+          <!-- breakout point pulse -->
+          <circle class="hero-dot" cx="230" cy="70" r="4.5" fill="#6ee7b7" />
+          <!-- arrow head at the top -->
+          <path class="hero-arrow" d="M300 22 l-11 2 m11 -2 l-3 11" stroke="#a78bfa" stroke-width="3" stroke-linecap="round" filter="url(#heroGlow)" />
+        </svg>
+        <h2>No scan running yet</h2>
+        <p>Press <strong>Start scan</strong> to sweep ~250 large-cap tickers across the S&amp;P 500 and NASDAQ-100.</p>
+        <p>Setups appear here in real time as the engine identifies them — you don't have to wait for the scan to finish.</p>
+        <ul class="signal-legend">
+          <li>Trend stack (price &gt; 20MA &gt; 50MA &gt; 200MA)</li>
+          <li>RSI 55–70 strength zone</li>
+          <li>MACD bullish &amp; expanding</li>
+          <li>Volume surge confirmation</li>
+          <li>Bollinger squeeze release</li>
+          <li>Within 6% of 52-week high</li>
+          <li>Higher-highs / higher-lows structure</li>
+        </ul>
+      </div>
+
+      <section id="cards" class="cards" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <!-- ============ PLANS VIEW ============ -->
+  <div class="view" id="view-plans">
+    <section class="plan-form-wrap">
+      <form id="plan-form" class="plan-form" autocomplete="off">
+        <div class="plan-form-row">
+          <div class="filter-group">
+            <label class="filter-label" for="p-ticker">Ticker</label>
+            <input id="p-ticker" class="filter-input" type="text" placeholder="e.g. NVDA" required maxlength="10" />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="p-entry">Entry price ($)</label>
+            <input id="p-entry" class="filter-input" type="number" step="0.01" min="0" placeholder="0.00" required />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="p-stop">Stop price ($)</label>
+            <input id="p-stop" class="filter-input" type="number" step="0.01" min="0" placeholder="0.00" required />
+          </div>
+          <div class="filter-group">
+            <label class="filter-label" for="p-target">Sell / target ($)</label>
+            <input id="p-target" class="filter-input" type="number" step="0.01" min="0" placeholder="0.00" required />
+          </div>
+          <div class="filter-group grow">
+            <label class="filter-label" for="p-notes">Notes (optional)</label>
+            <input id="p-notes" class="filter-input" type="text" placeholder="Why this trade?" maxlength="160" />
+          </div>
+        </div>
+        <div class="plan-form-actions">
+          <label class="fav-check">
+            <input id="p-fav" type="checkbox" /> <span>★ Add to favorites</span>
+          </label>
+          <div class="form-msg" id="plan-form-msg"></div>
+          <button type="submit" class="primary" id="plan-save-btn">Create plan</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="plans-toolbar">
+      <div class="seg" id="plans-filter">
+        <button class="seg-btn active" data-val="all" type="button">All plans</button>
+        <button class="seg-btn" data-val="fav" type="button">★ Favorites</button>
+      </div>
+      <div class="plans-toolbar-right">
+        <span class="refresh-meta" id="plans-refresh">Prices not yet loaded</span>
+        <button class="ghost" id="plans-refresh-btn" type="button">Refresh prices</button>
+      </div>
+    </section>
+
+    <main>
+      <div id="plans-empty" class="empty-state">
+        <div class="empty-glyph">◷</div>
+        <h2>No trade plans yet</h2>
+        <p>Fill in a ticker, your entry, stop and target above, then press <strong>Create plan</strong>.</p>
+        <p>Each plan tracks the live price and tells you when it's winning, hit target 🎯, or hit your stop 🛑. Prices auto-refresh every 30 seconds while this tab is open.</p>
+      </div>
+      <section id="plans-list" class="plans-list"></section>
+    </main>
+  </div>
+
+  <!-- ============ TEMPLATES ============ -->
+  <template id="card-tpl">
+    <article class="card">
+      <header class="card-head">
+        <div>
+          <div class="ticker"></div>
+          <div class="company"></div>
+        </div>
+        <div class="score-ring">
+          <svg viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="score-bg" cx="18" cy="18" r="15.9155" />
+            <circle class="score-fg" cx="18" cy="18" r="15.9155" stroke-dasharray="0,100" />
+          </svg>
+          <div class="score-num">0</div>
+        </div>
+      </header>
+
+      <div class="price-row">
+        <div class="price"></div>
+        <div class="change"></div>
+      </div>
+
+      <svg class="spark" viewBox="0 0 240 60" preserveAspectRatio="none" aria-hidden="true">
+        <path class="spark-fill" d=""></path>
+        <path class="spark-line" d=""></path>
+      </svg>
+
+      <div class="trade-grid">
+        <div><span class="lbl">Target</span><span class="val target"></span></div>
+        <div><span class="lbl">Stop</span><span class="val stop"></span></div>
+        <div><span class="lbl">Upside</span><span class="val upside"></span></div>
+        <div><span class="lbl">Risk</span><span class="val risk"></span></div>
+        <div><span class="lbl">R / R</span><span class="val rr"></span></div>
+        <div><span class="lbl">RSI</span><span class="val rsi"></span></div>
+      </div>
+
+      <div class="signals"></div>
+      <p class="rationale"></p>
+      <button class="ghost plan-from-scan" type="button">+ Create plan from this</button>
+    </article>
+  </template>
+
+  <template id="plan-tpl">
+    <article class="plan-card">
+      <header class="plan-head">
+        <div class="plan-title">
+          <button class="fav-star" type="button" title="Toggle favorite">★</button>
+          <span class="plan-ticker"></span>
+          <span class="plan-status"></span>
+        </div>
+        <button class="plan-del" type="button" title="Delete plan">✕</button>
+      </header>
+
+      <div class="plan-prices">
+        <div class="plan-cur">
+          <span class="lbl">Current</span>
+          <span class="val plan-current">—</span>
+          <span class="plan-change"></span>
+        </div>
+        <div class="plan-pnl-box">
+          <span class="lbl">P&amp;L vs entry</span>
+          <span class="val plan-pnl">—</span>
+        </div>
+      </div>
+
+      <div class="plan-bar" aria-hidden="true">
+        <div class="plan-bar-track">
+          <span class="plan-bar-stop" title="Stop"></span>
+          <span class="plan-bar-entry" title="Entry"></span>
+          <span class="plan-bar-target" title="Target"></span>
+          <span class="plan-bar-now" title="Current price"></span>
+        </div>
+      </div>
+
+      <div class="trade-grid plan-grid">
+        <div><span class="lbl">Entry</span><span class="val plan-entry"></span></div>
+        <div><span class="lbl">Stop</span><span class="val stop plan-stop"></span></div>
+        <div><span class="lbl">Target</span><span class="val target plan-target"></span></div>
+        <div><span class="lbl">Risk / share</span><span class="val plan-risk"></span></div>
+        <div><span class="lbl">Reward / share</span><span class="val plan-reward"></span></div>
+        <div><span class="lbl">R / R</span><span class="val plan-rr"></span></div>
+      </div>
+
+      <p class="plan-notes"></p>
+    </article>
+  </template>
+
+  <script src="/static/app.js"></script>
+  <script src="/static/plans.js"></script>
+  <script>
+    // Register the service worker only in a secure context (https) or on
+    // localhost. Over plain-HTTP LAN it won't register — that's expected;
+    // "Add to Home Screen" still works for a standalone app icon.
+    if ("serviceWorker" in navigator &&
+        (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

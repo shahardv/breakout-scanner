@@ -1,0 +1,15 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.Python
+
+# Runtime cache (regenerated from Wikipedia)
+.universe_cache.json
+
+# OS / editor
+.DS_Store
+*.swp
+
+# Local launch config (machine-specific)
+.claude/launch.json
