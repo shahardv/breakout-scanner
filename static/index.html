@@ -205,6 +205,10 @@
             <label class="filter-label" for="p-target">Sell / target ($)</label>
             <input id="p-target" class="filter-input" type="number" step="0.01" min="0" placeholder="0.00" required />
           </div>
+          <div class="filter-group">
+            <label class="filter-label" for="p-shares">Shares</label>
+            <input id="p-shares" class="filter-input" type="number" step="1" min="1" placeholder="e.g. 10" />
+          </div>
           <div class="filter-group grow">
             <label class="filter-label" for="p-notes">Notes (optional)</label>
             <input id="p-notes" class="filter-input" type="text" placeholder="Why this trade?" maxlength="160" />
@@ -302,8 +306,9 @@
           <span class="plan-change"></span>
         </div>
         <div class="plan-pnl-box">
-          <span class="lbl">P&amp;L vs entry</span>
+          <span class="lbl">Open P&amp;L</span>
           <span class="val plan-pnl">—</span>
+          <span class="plan-pnl-pct"></span>
         </div>
       </div>
 
@@ -316,7 +321,23 @@
         </div>
       </div>
 
+      <div class="plan-proj">
+        <div class="proj-cell win">
+          <span class="lbl">Profit at target 🎯</span>
+          <span class="val plan-profit-target">—</span>
+        </div>
+        <div class="proj-cell loss">
+          <span class="lbl">Loss at stop 🛑</span>
+          <span class="val plan-loss-stop">—</span>
+        </div>
+        <div class="proj-cell">
+          <span class="lbl">Position size</span>
+          <span class="val plan-position">—</span>
+        </div>
+      </div>
+
       <div class="trade-grid plan-grid">
+        <div><span class="lbl">Shares</span><span class="val plan-shares"></span></div>
         <div><span class="lbl">Entry</span><span class="val plan-entry"></span></div>
         <div><span class="lbl">Stop</span><span class="val stop plan-stop"></span></div>
         <div><span class="lbl">Target</span><span class="val target plan-target"></span></div>

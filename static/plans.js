@@ -10,6 +10,7 @@
   const fEntry = $("p-entry");
   const fStop = $("p-stop");
   const fTarget = $("p-target");
+  const fShares = $("p-shares");
   const fNotes = $("p-notes");
   const fFav = $("p-fav");
   const formMsg = $("plan-form-msg");
@@ -100,21 +101,43 @@
       chEl.classList.add(q.change_pct >= 0 ? "up" : "down");
     }
 
-    // P&L vs entry
+    const shares = Number(plan.shares) > 0 ? Number(plan.shares) : 0;
+
+    // Open P&L — shows $ when shares are set, otherwise just the %.
     const pnlEl = node.querySelector(".plan-pnl");
+    const pnlPctEl = node.querySelector(".plan-pnl-pct");
     if (price != null) {
       const pnlPct = (price / plan.entry - 1) * 100;
-      pnlEl.textContent = pct(pnlPct);
-      pnlEl.classList.add(pnlPct >= 0 ? "up" : "down");
+      if (shares > 0) {
+        const pnlDollar = (price - plan.entry) * shares;
+        pnlEl.textContent = `${pnlDollar >= 0 ? "+" : "−"}${money(Math.abs(pnlDollar))}`;
+        pnlPctEl.textContent = pct(pnlPct);
+      } else {
+        pnlEl.textContent = pct(pnlPct);
+      }
+      const up = pnlPct >= 0;
+      pnlEl.classList.add(up ? "up" : "down");
+      pnlPctEl.classList.add(up ? "up" : "down");
     }
 
+    // Projected outcomes from the plan data (× shares when set, else per-share).
+    const riskPerShare = plan.entry - plan.stop;
+    const rewardPerShare = plan.target - plan.entry;
+    const profitTarget = shares > 0 ? rewardPerShare * shares : rewardPerShare;
+    const lossStop = shares > 0 ? riskPerShare * shares : riskPerShare;
+    const projProfitEl = node.querySelector(".plan-profit-target");
+    const projLossEl = node.querySelector(".plan-loss-stop");
+    const posEl = node.querySelector(".plan-position");
+    projProfitEl.textContent = `+${money(profitTarget)}${shares > 0 ? "" : " /sh"}`;
+    projLossEl.textContent = `−${money(lossStop)}${shares > 0 ? "" : " /sh"}`;
+    posEl.textContent = shares > 0 ? money(plan.entry * shares) : "— (no shares set)";
+
     // grid
+    node.querySelector(".plan-shares").textContent = shares > 0 ? String(shares) : "—";
     node.querySelector(".plan-entry").textContent = money(plan.entry);
     node.querySelector(".plan-stop").textContent = money(plan.stop);
     node.querySelector(".plan-target").textContent = money(plan.target);
 
-    const riskPerShare = plan.entry - plan.stop;
-    const rewardPerShare = plan.target - plan.entry;
     const rr = riskPerShare > 0 ? rewardPerShare / riskPerShare : null;
     node.querySelector(".plan-risk").textContent = money(riskPerShare);
     node.querySelector(".plan-reward").textContent = money(rewardPerShare);
@@ -205,9 +228,16 @@
     if (stop >= entry) return showMsg("Stop should be below your entry (long trade).", false);
     if (target <= entry) return showMsg("Target should be above your entry.", false);
 
+    // Shares are optional; if filled, must be a positive whole number.
+    let shares = 0;
+    if (fShares.value.trim() !== "") {
+      shares = parseInt(fShares.value, 10);
+      if (!Number.isFinite(shares) || shares <= 0) return showMsg("Shares must be a positive whole number.", false);
+    }
+
     plans.push({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      ticker, entry, stop, target,
+      ticker, entry, stop, target, shares,
       notes: fNotes.value.trim(),
       favorite: fFav.checked,
       createdAt: Date.now(),

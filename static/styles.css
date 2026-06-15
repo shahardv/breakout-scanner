@@ -984,8 +984,38 @@ main { padding: 24px 36px 80px; }
 .plan-current { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .plan-pnl { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .plan-change { font-size: 12px; font-variant-numeric: tabular-nums; }
-.plan-change.up, .plan-pnl.up { color: var(--accent); }
-.plan-change.down, .plan-pnl.down { color: var(--danger); }
+.plan-pnl-pct { font-size: 12px; font-variant-numeric: tabular-nums; }
+.plan-change.up, .plan-pnl.up, .plan-pnl-pct.up { color: var(--accent); }
+.plan-change.down, .plan-pnl.down, .plan-pnl-pct.down { color: var(--danger); }
+
+/* Projected outcomes strip (profit at target / loss at stop / position size) */
+.plan-proj {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.proj-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+.proj-cell .lbl { font-size: 10px; }
+.proj-cell .val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.proj-cell.win {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.proj-cell.win .val { color: var(--accent); }
+.proj-cell.loss {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.proj-cell.loss .val { color: var(--danger); }
 
 /* progress bar: stop → target with entry + current markers */
 .plan-bar { margin: 6px 0 16px; padding: 10px 0; }
