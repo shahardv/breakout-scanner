@@ -24,6 +24,10 @@
     const node = tpl.content.firstElementChild.cloneNode(true);
     node.href = n.link || "#";
     if (!n.link) node.removeAttribute("target");
+    // ponytail: open in new tab — iframe embedding fails for most news sites
+    // (X-Frame-Options) and blocked/loaded frames are indistinguishable from
+    // JS, so a detection-based modal is worse UX than just letting the OS
+    // handle it. iOS app switcher / back gesture returns to the PWA.
     const img = node.querySelector("img");
     if (n.thumbnail) img.src = n.thumbnail;
     else node.querySelector(".news-thumb").classList.add("no-img");
