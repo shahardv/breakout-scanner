@@ -439,6 +439,7 @@
   const views = {
     scanner: $("view-scanner"),
     plans: $("view-plans"),
+    news: $("view-news"),
   };
 
   function switchView(name) {
@@ -450,6 +451,9 @@
     // Let the plans module know it became visible so it can refresh prices.
     if (name === "plans" && window.StockPlans && window.StockPlans.onShow) {
       window.StockPlans.onShow();
+    }
+    if (name === "news" && window.StockNews && window.StockNews.onShow) {
+      window.StockNews.onShow();
     }
   }
 

@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from scanner import analyze
 from universe import get_universe
 from quotes import get_quotes
+from news import get_news
 
 ROOT = Path(__file__).parent
 app = FastAPI(title="Breakout Scanner")
@@ -125,6 +126,13 @@ async def scan(universe: str = Query("top", pattern="^(top|full)$")):
             "Connection": "keep-alive",
         },
     )
+
+
+@app.get("/api/news")
+async def news():
+    loop = asyncio.get_running_loop()
+    items = await loop.run_in_executor(None, get_news)
+    return {"items": items, "ts": time.time()}
 
 
 @app.get("/api/quote")

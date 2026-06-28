@@ -33,6 +33,7 @@
     <nav class="tabs" id="tabs">
       <button class="tab active" data-view="scanner" type="button">Scanner</button>
       <button class="tab" data-view="plans" type="button">My Plans <span class="tab-count" id="plans-count">0</span></button>
+      <button class="tab" data-view="news" type="button">News</button>
     </nav>
   </header>
 
@@ -246,6 +247,20 @@
     </main>
   </div>
 
+  <!-- ============ NEWS VIEW ============ -->
+  <div class="view" id="view-news">
+    <section class="news-toolbar">
+      <div>
+        <h2 class="news-title">Market news · last 72h</h2>
+        <span class="refresh-meta" id="news-meta">Loading…</span>
+      </div>
+      <button class="ghost" id="news-refresh-btn" type="button">↻ Refresh</button>
+    </section>
+    <main>
+      <section id="news-list" class="news-list" aria-live="polite"></section>
+    </main>
+  </div>
+
   <!-- ============ TEMPLATES ============ -->
   <template id="card-tpl">
     <article class="card">
@@ -350,8 +365,24 @@
     </article>
   </template>
 
+  <template id="news-tpl">
+    <a class="news-card" target="_blank" rel="noopener noreferrer">
+      <div class="news-thumb"><img alt="" loading="lazy" decoding="async"/></div>
+      <div class="news-body">
+        <div class="news-headline"></div>
+        <div class="news-meta">
+          <span class="news-publisher"></span>
+          <span class="news-dot">·</span>
+          <span class="news-time"></span>
+        </div>
+        <div class="news-tickers"></div>
+      </div>
+    </a>
+  </template>
+
   <script src="/static/app.js"></script>
   <script src="/static/plans.js"></script>
+  <script src="/static/news.js"></script>
   <script>
     // Register the service worker only in a secure context (https) or on
     // localhost. Over plain-HTTP LAN it won't register — that's expected;
