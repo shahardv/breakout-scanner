@@ -75,6 +75,12 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
+    # yfinance sometimes returns a trailing row with NaN OHLC (market open,
+    # partial data, etc.) — drop it before we compute anything.
+    df = df.dropna(subset=["Close"])
+    if len(df) < 120:
+        return None
+
     close = df["Close"].astype(float)
     high = df["High"].astype(float)
     low = df["Low"].astype(float)
