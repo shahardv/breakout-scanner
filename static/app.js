@@ -40,7 +40,7 @@
     search: "",
     index: "all", // "all" | "sp500" | "nasdaq100"
     sort: "score",
-    minScore: 60,
+    minScore: 45,
     minUpside: 0,
     minRR: 0,
     minPrice: null,
