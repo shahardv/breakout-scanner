@@ -88,7 +88,10 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     change_pct = (last_close / prev_close - 1) * 100 if prev_close > 0 else 0.0
 
     # ---- define the candidate base window (Phase B territory) ----
-    base_days = min(120, len(close) - 1)
+    # Only ~4 months so the window captures the flat range, not the tail of
+    # the prior decline. year_high (below) still comes from the full 12mo
+    # series, so decline_pct can measure how far the base is below the peak.
+    base_days = min(80, len(close) - 1)
     base_close = close.iloc[-base_days:]
     base_high = high.iloc[-base_days:]
     base_low = low.iloc[-base_days:]
