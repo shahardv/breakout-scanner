@@ -136,13 +136,14 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     sos_detected = False
     if vol_avg20 > 0:
         for _, row in last10.iterrows():
-            if row["Close"] > resistance and row["Volume"] > vol_avg20 * 1.3:
+            if row["Close"] > resistance and row["Volume"] > vol_avg20 * 1.15:
                 sos_detected = True
                 break
 
-    # LPS: currently near support (within 5%) and 5-day trend up
+    # LPS: currently in the lower third of the range and 5-day trend up
     last5 = close.iloc[-5:]
-    lps_zone = last_close <= support * 1.05 and float(last5.iloc[-1]) > float(last5.iloc[0])
+    lps_zone = last_close <= support + (resistance - support) * 0.33 \
+        and float(last5.iloc[-1]) > float(last5.iloc[0])
 
     # Volume dry-up (mid base) → expansion (recent)
     third = base_days // 3
@@ -176,7 +177,7 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     if abs(slope_pct) < 0.05 and range_width < 0.25:
         score += 20
         signals.append(f"Flat trading range ({range_width * 100:.0f}% wide) — cause being built")
-    elif abs(slope_pct) < 0.10 and range_width < 0.35:
+    elif abs(slope_pct) < 0.15 and range_width < 0.50:
         score += 10
         signals.append(f"Consolidation range ({range_width * 100:.0f}% wide)")
     else:
@@ -210,7 +211,7 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     # ---- gating: must be actionable (in Phase C or D) ----
     if not (spring_detected or sos_detected or lps_zone):
         return None
-    if score < 55 or len(signals) < 3:
+    if score < 45 or len(signals) < 3:
         return None
 
     # ---- targets / stops ----
