@@ -77,20 +77,30 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     change_pct = (last_close / prev_close - 1) * 100 if prev_close > 0 else 0.0
 
     # ---- volume surge ----
+    # Baseline is the 50 days BEFORE the surge window — long enough that a
+    # multi-day ramp doesn't contaminate the baseline (a 20-day baseline
+    # gets inflated once the surge is a few days in, hiding continuation
+    # moves like a stock that's been running for a week).
     vol_recent3 = float(volume.iloc[-3:].mean())
-    vol_avg20 = float(volume.iloc[-23:-3].mean())  # 20 days BEFORE the surge window
-    if vol_avg20 <= 0 or not math.isfinite(vol_recent3):
+    baseline_slice = volume.iloc[-53:-3] if len(volume) >= 53 else volume.iloc[:-3]
+    vol_baseline = float(baseline_slice.mean())
+    if vol_baseline <= 0 or not math.isfinite(vol_recent3):
         return None
-    vol_ratio = vol_recent3 / vol_avg20
-
-    if vol_ratio < 2.0:
-        return None
+    vol_ratio = vol_recent3 / vol_baseline
 
     # ---- direction of the surge ----
     net_change_pct = (float(close.iloc[-1]) / float(close.iloc[-4]) - 1) * 100 \
         if len(close) >= 4 and float(close.iloc[-4]) > 0 else 0.0
     body_sum = float((close.iloc[-3:] - open_.iloc[-3:]).sum())
     bullish = body_sum > 0 and net_change_pct >= 0
+
+    # Gate: either a clear volume surge, OR a strong price move on
+    # above-baseline volume (catches continuation moves like GM where
+    # volume has been elevated for a week so the ratio compresses, but
+    # price is clearly moving).
+    strong_move = abs(net_change_pct) >= 5.0 and vol_ratio >= 1.15
+    if vol_ratio < 1.5 and not strong_move:
+        return None
 
     # ---- freshness: is this the biggest 3-day surge in the last 60 days? ----
     vol_3d_series = volume.rolling(3).mean()
@@ -109,9 +119,9 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
         atr = last_close * 0.02  # 2% fallback
 
     # ---- scoring: bigger ratio = higher score ----
-    # 2× → 50, 3× → 70, 5× → 90, 7×+ → 100
-    score = int(min(100, 30 + vol_ratio * 10))
-    signals = [f"3-day avg volume is {vol_ratio:.2f}× the prior 20-day average"]
+    # 1.5× → 52, 2× → 60, 3× → 75, 5× → 100
+    score = int(min(100, 30 + vol_ratio * 15))
+    signals = [f"3-day avg volume is {vol_ratio:.2f}× the prior 50-day baseline"]
 
     if bullish:
         signals.append(f"Bullish surge: price up {net_change_pct:+.2f}% over the 3 days")
@@ -133,7 +143,7 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     reward_risk = upside_pct / risk_pct if risk_pct > 0 else 0.0
 
     rationale = (
-        f"{ticker} traded {vol_ratio:.2f}× its 20-day average volume over the last 3 sessions, "
+        f"{ticker} traded {vol_ratio:.2f}× its 50-day baseline volume over the last 3 sessions, "
         f"with price moving {net_change_pct:+.2f}%. "
         f"{'Bullish accumulation' if bullish else 'Heavy distribution'} signature. "
         f"ATR-based target ${target_price:.2f}, stop ${stop_loss:.2f}, R/R ≈ {reward_risk:.2f}×."
@@ -158,9 +168,9 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
         reward_risk=round(reward_risk, 2),
         signals=signals,
         details={
-            "vol_ratio_3d_vs_20d": round(vol_ratio, 2),
+            "vol_ratio_3d_vs_baseline": round(vol_ratio, 2),
             "vol_recent_3d_avg": int(vol_recent3),
-            "vol_prior_20d_avg": int(vol_avg20),
+            "vol_baseline_50d_avg": int(vol_baseline),
             "net_change_3d_pct": round(net_change_pct, 2),
             "bullish": bullish,
             "new_60d_vol_high": is_new_high,
@@ -194,7 +204,7 @@ if __name__ == "__main__":
     yf.download = fake_download  # type: ignore
     result = analyze("TEST")
     assert result is not None, "3× volume surge should be detected"
-    assert result.details["vol_ratio_3d_vs_20d"] >= 3.0, result.details
+    assert result.details["vol_ratio_3d_vs_baseline"] >= 3.0, result.details
     assert result.details["bullish"], "up-trending series should score as bullish"
-    print(f"OK  score={result.score}  ratio={result.details['vol_ratio_3d_vs_20d']}  "
+    print(f"OK  score={result.score}  ratio={result.details['vol_ratio_3d_vs_baseline']}  "
           f"bullish={result.details['bullish']}  new_high={result.details['new_60d_vol_high']}")
