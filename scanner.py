@@ -110,13 +110,13 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
 
     # --- Spring depth: how far below support was the shakeout ---
     spring_depth = (support - spring_low) / support
-    if spring_depth < 0.03:  # need at least a 3% piercing to count
+    if spring_depth < 0.02:  # need at least a 2% piercing to count
         return None
 
     # --- Gates: reclaim + still in entry zone + spring is fresh ---
     reclaimed = last_close > support * 0.98
-    still_in_range = last_close < range_top * 1.05
-    if not reclaimed or not still_in_range or days_since_spring > 30:
+    still_in_range = last_close < range_top * 1.10  # allow slight breakout
+    if not reclaimed or not still_in_range or days_since_spring > 45:
         return None
 
     # --- Spring bar volume (institutional absorption on the wick) ---
@@ -139,8 +139,8 @@ def analyze(ticker: str, sp500: set | None = None, nasdaq100: set | None = None)
     if not math.isfinite(atr) or atr <= 0:
         atr = last_close * 0.02
 
-    # --- Scoring ---
-    score = 40
+    # --- Scoring (base 50 = any gate-passing setup clears the UI's 45 floor) ---
+    score = 50
     signals = [
         f"Spring: pierced support ${support:.2f} down to ${spring_low:.2f} "
         f"({spring_depth * 100:.1f}%) {days_since_spring}d ago",
